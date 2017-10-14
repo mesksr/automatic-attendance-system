@@ -38,10 +38,6 @@ class AttendanceWindow(QtGui.QMainWindow):
         self.close()
 
     def record_video(self):
-        #record()
-        #snap()
-        #extract_faces()
-        #mark()
         pass
                
 if __name__ == '__main__':

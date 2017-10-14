@@ -146,9 +146,9 @@ class RegistrationWindow(QtGui.QMainWindow):
         if (check_value == 0):
             conn=sqlite3.connect('Attendance System.db')
             c=conn.cursor()
-            c.execute('CREATE TABLE IF NOT EXISTS YEAR' + str(self.e3.text()) + ' (Roll INT, Name TEXT, Year INT)')
+            c.execute('CREATE TABLE IF NOT EXISTS YEAR-' + str(self.e3.text()) + ' (Roll INT, Name TEXT, Year INT)')
             (name,regno,year)=(self.e1.text(),int(self.e2.text()),int(self.e3.text()))
-            c.execute('INSERT INTO YEAR' + str(self.e3.text()) + ' (Roll,Name,Year) VALUES(?,?,?)',(regno,name,year))
+            c.execute('INSERT INTO YEAR-' + str(self.e3.text()) + ' (Roll,Name,Year) VALUES(?,?,?)',(regno,name,year))
             conn.commit()
             c.close()
             conn.close()
