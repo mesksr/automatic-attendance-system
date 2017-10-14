@@ -1,5 +1,3 @@
-#Author:Dilpreet Singh Chawla
-#Registration Number: 0000171
 from check_attendance import CheckAttendance
 from PyQt4 import QtGui,QtCore
 
@@ -21,11 +19,11 @@ class AttendanceWindow(QtGui.QMainWindow):
         h.setText("ATTENDANCE")
 
         b1=QtGui.QPushButton(self)
-        b1.setText("RECORDING")
+        b1.setText("RECORD & MARK")
         b1.setStyleSheet("QPushButton { background-color : gray;color : black ; }")
         b1.setFont(QtGui.QFont("Times",16,QtGui.QFont.Bold))
         b1.setGeometry(250,200,300,50)
-        #b1.clicked.connect(self.record_video)
+        b1.clicked.connect(self.record_video)
 
         b2=QtGui.QPushButton(self)
         b2.setText("CHECK ATTENDANCE")
@@ -38,6 +36,13 @@ class AttendanceWindow(QtGui.QMainWindow):
         self._check_attendance = CheckAttendance()
         self._check_attendance.show()
         self.close()
+
+    def record_video(self):
+        #record()
+        #snap()
+        #extract_faces()
+        #mark()
+        pass
                
 if __name__ == '__main__':
     app = QtGui.QApplication([])

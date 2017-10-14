@@ -1,6 +1,3 @@
-#Author:Dilpreet Singh Chawla
-#Registration Number: 0000171
-
 from PyQt4 import QtGui,QtCore
 from registration_window import RegistrationWindow
 from attendance_window import AttendanceWindow

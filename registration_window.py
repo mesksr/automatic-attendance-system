@@ -98,21 +98,7 @@ class RegistrationWindow(QtGui.QMainWindow):
         b1.setFont(QtGui.QFont("Times",12,QtGui.QFont.Bold))
         b1.setGeometry(520,450,100,30)
         b1.setStyleSheet("QPushButton { background-color : green;color : white ; }")
-        check_value = self.check()
-        if (check_value == 0):
-            b1.clicked.connect(self.store_in_database)
-        elif (check_value == 1):
-            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
-            self.l4.setText("Invalid Name")
-        elif (check_value == 2):
-            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
-            self.l4.setText("Roll number should be in range [1, 100]")
-        elif (check_value == 3):
-            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
-            self.l4.setText("Year should be between 1 to 4")
-        elif (check_value == 4):
-            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
-            self.l4.setText("Image should have exactly one person")
+        b1.clicked.connect(self.store_in_database)
             
     def erase(self):
         #function for clearing fields and changing to default
@@ -129,7 +115,7 @@ class RegistrationWindow(QtGui.QMainWindow):
             self.l4.setText("Invalid Name")
         elif (check_value == 2):
             self.l4.setGeometry(QtCore.QRect(40,500,250,30))
-            self.l4.setText("Roll number should be in range [1, 100]")
+            self.l4.setText("Roll - Out of Range")
         elif (check_value == 3):
             self.l4.setGeometry(QtCore.QRect(40,500,250,30))
             self.l4.setText("Year should be between 1 to 4")
@@ -155,31 +141,72 @@ class RegistrationWindow(QtGui.QMainWindow):
 
     def store_in_database(self):
         #Function for storing information in database
-        conn=sqlite3.connect('Student.db')
-        c=conn.cursor()
-        c.execute('CREATE TABLE IF NOT EXISTS Students (Roll INT, Name TEXT, Year INT)')
-        (name,regno,year)=(self.e1.text(),int(self.e2.text()),int(self.e3.text()))
-        c.execute('INSERT INTO Students (Roll,Name,Year) VALUES(?,?,?)',(regno,name,year))
-        conn.commit()
-        c.close()
-        conn.close()
-       
-        #Displaying message after successful submission 
-        self.l4.setGeometry(QtCore.QRect(40,500,250,30))
-        self.l4.setText("SUCCESSFULLY REGISTERED")
+        check_value = self.check()
+        print ('>>', check_value)
+        if (check_value == 0):
+            conn=sqlite3.connect('Attendance System.db')
+            c=conn.cursor()
+            c.execute('CREATE TABLE IF NOT EXISTS YEAR' + str(self.e3.text()) + ' (Roll INT, Name TEXT, Year INT)')
+            (name,regno,year)=(self.e1.text(),int(self.e2.text()),int(self.e3.text()))
+            c.execute('INSERT INTO YEAR' + str(self.e3.text()) + ' (Roll,Name,Year) VALUES(?,?,?)',(regno,name,year))
+            conn.commit()
+            c.close()
+            conn.close()
+            #Displaying message after successful submission 
+            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
+            self.l4.setText("SUCCESSFULLY REGISTERED")
+        elif (check_value == 1):
+            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
+            self.l4.setText("Invalid Name")
+        elif (check_value == 2):
+            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
+            self.l4.setText("Roll - Out of Range")
+        elif (check_value == 3):
+            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
+            self.l4.setText("Year should be between 1 to 4")
+        elif (check_value == 4):
+            self.l4.setGeometry(QtCore.QRect(40,500,250,30))
+            self.l4.setText("Click again please.")
+            
 
     def check(self):
         name = self.e1.text()
-        roll = self.e2.text()
-        year = self.e3.text()
-        # return 1 --- if name is not set / contains number or symbols
-        # return 2 --- if roll not in range [1, 100]
-        # return 3 --- if year is not in range [1, 4]
-        # return 4 --- if image contains more than one person (image is stored in 'registration_images/
-        # return 0 --- if everything is fine
+        if (len(name) == 0):
+            return 1
+        
+        for i in range(10):
+            if (str(i) in name):
+                return 1
+        
+        try:
+            roll = int(self.e2.text())
+            if (roll < 1 or roll > 100):
+                return 2
+        except:
+            return 2
+        
+        try:
+            year = int(self.e3.text())
+            if (year < 1 or year > 4):
+                return 3
+        except:
+            return 3
+            
+        try:
+            img = cv2.imread(r'C:\\Users\\mesksr\\Documents\\GitHub\\automatic-attendance-system\registration_images\\' +
+                             str(self.e3.text())+'_'+str(self.e2.text())+'.png', 0)
+            face_cascade=cv2.CascadeClassifier('support_files/haarcascade_frontalface_default.xml')
+            faces = face_cascade.detectMultiScale(img, 1.3, 5)
+            print (len(faces), 'face(s) detected')
+            if (len(faces) != 1):
+                return 4
+        except:
+            return 4
+        
         return 0
+    
 
-if __name__ == '__main__':
+if __name__ == '__main__':  
     app = QtGui.QApplication([])
     gui = RegistrationWindow()
     gui.show()
