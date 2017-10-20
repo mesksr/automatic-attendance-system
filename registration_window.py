@@ -12,7 +12,7 @@ class RegistrationWindow(QtGui.QMainWindow):
         #Creating Registration Window 
         self.setGeometry(300,50,800,600)
         self.setWindowTitle("Registration")
-        self.setWindowIcon(QtGui.QIcon('logo1.png'))
+        self.setWindowIcon(QtGui.QIcon('other_images/logo.png'))
 
         #Heading
         h=QtGui.QLabel(self)
@@ -128,16 +128,16 @@ class RegistrationWindow(QtGui.QMainWindow):
                 face=face_cascade.detectMultiScale(gray,1.3,5)
                 for (x,y,w,h) in face:
                     roi_color=img[y:y+h,x:x+w]
-                    cv2.imwrite((r'C:\\Users\\mesksr\\Documents\\GitHub\\automatic-attendance-system\registration_images\\' +
-                                 str(self.e3.text())+'_'+str(self.e2.text())+'.png'),roi_color)
+                    cv2.imwrite(str(r'C:\\Users\\mesksr\\Documents\\GitHub\\automatic-attendance-system\\registration_images\\Year' +
+                                 str(self.e3.text())+'\\'+str(self.e2.text())+'.png'),roi_color)
                 cv2.imshow('img',img)
                 k=cv2.waitKey(30) & 0xff
                 if k==27:
                     break
             cap.release()
             cv2.destroyAllWindows()
-            self.pic.setPixmap(QtGui.QPixmap(str(r'C:\\Users\\mesksr\\Documents\\GitHub\\automatic-attendance-system\registration_images\\' +
-                                                 str(self.e3.text())+'_'+str(self.e2.text())+'.png')))
+            self.pic.setPixmap(QtGui.QPixmap(str(r'C:\\Users\\mesksr\\Documents\\GitHub\\automatic-attendance-system\\registration_images\\Year' +
+                                             str(self.e3.text())+'\\'+str(self.e2.text())+'.png')))
 
     def store_in_database(self):
         #Function for storing information in database
@@ -146,15 +146,15 @@ class RegistrationWindow(QtGui.QMainWindow):
         if (check_value == 0):
             conn=sqlite3.connect('Attendance System.db')
             c=conn.cursor()
-            c.execute('CREATE TABLE IF NOT EXISTS YEAR-' + str(self.e3.text()) + ' (Roll INT, Name TEXT, Year INT)')
+            c.execute('CREATE TABLE IF NOT EXISTS YEAR' + str(self.e3.text()) + ' (Roll INT, Name TEXT)')
             (name,regno,year)=(self.e1.text(),int(self.e2.text()),int(self.e3.text()))
-            c.execute('INSERT INTO YEAR-' + str(self.e3.text()) + ' (Roll,Name,Year) VALUES(?,?,?)',(regno,name,year))
+            c.execute('INSERT INTO YEAR' + str(self.e3.text()) + ' (Roll,Name) VALUES(?,?)',(regno,name))
             conn.commit()
             c.close()
             conn.close()
             #Displaying message after successful submission 
             self.l4.setGeometry(QtCore.QRect(40,500,250,30))
-            self.l4.setText("SUCCESSFULLY REGISTERED")
+            self.l4.setText("Successfully Registered")
         elif (check_value == 1):
             self.l4.setGeometry(QtCore.QRect(40,500,250,30))
             self.l4.setText("Invalid Name")
@@ -193,8 +193,8 @@ class RegistrationWindow(QtGui.QMainWindow):
             return 3
             
         try:
-            img = cv2.imread(r'C:\\Users\\mesksr\\Documents\\GitHub\\automatic-attendance-system\registration_images\\' +
-                             str(self.e3.text())+'_'+str(self.e2.text())+'.png', 0)
+            img = cv2.imread(r'C:\\Users\\mesksr\\Documents\\GitHub\\automatic-attendance-system\\registration_images\\Year' +
+                            str(self.e3.text())+'\\'+str(self.e2.text())+'.png', 0)
             face_cascade=cv2.CascadeClassifier('support_files/haarcascade_frontalface_default.xml')
             faces = face_cascade.detectMultiScale(img, 1.3, 5)
             print (len(faces), 'face(s) detected')
