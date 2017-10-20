@@ -7,7 +7,7 @@ conn=sqlite3.connect('Attendance System.db')
 c=conn.cursor()
  
 class CheckAttendance(QtGui.QMainWindow):
-    def __init__(self,sub='IT301'):
+    def __init__(self,sub):
         self.subject=sub
         
         super(CheckAttendance, self).__init__()

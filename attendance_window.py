@@ -1,6 +1,16 @@
+import cv2
+import numpy as np
+import os
+import time
+from PIL import Image
+import shutil
+import sqlite3
 
 from check_attendance import CheckAttendance
 from PyQt4 import QtGui,QtCore
+
+conn=sqlite3.connect('Attendance System.db')
+c=conn.cursor()
 
 class AttendanceWindow(QtGui.QMainWindow):
     #Attendance Window
@@ -60,7 +70,90 @@ class AttendanceWindow(QtGui.QMainWindow):
         self.record() #to record the video and save it to folder 'videos'
         self.mark()
 
+    def record(self):
+        #to save video with the name self.e.text()
+        return
+    
     def mark(self):
+        #self.get_snaps() #to get snaps from the recorded video
+        #self.extract_faces() #to read all faces from the snaps
+        self.match() #match extracted faces to those in database and update the database
+
+    def get_snaps(self):
+        shutil.rmtree("temp",ignore_errors=True)
+        os.mkdir("temp")
+        os.mkdir("temp/presentFaces")
+        video_name = str(self.e.text())
+        crop_time = 2
+        time_gap = 2
+        #cv2 object created that uses the video capture function to open the video file
+        cap = cv2.VideoCapture("videos/"+video_name+".mp4")
+        fps    = int(cap.get(cv2.CAP_PROP_FPS))
+        length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        count = fps*(crop_time)
+        i = 0
+        cap.set(1,68)
+        while (cap.isOpened()):
+            ret , frame = cap.read()
+            if(count>length):
+                break   
+            cv2.waitKey(3)
+            if( (count == (crop_time*fps + i*time_gap*fps)) &(count < length)):
+                cv2.imwrite('temp/frame'+str(i)+'.jpg',frame)
+                i = i+1
+                print('snap taken @', count)
+            count = count + 1
+        cap.release()
+        cv2.destroyAllWindows()
+        print (i, "snaps taken")
+        
+    def extract_faces(self):
+        i=0
+        face_cascade = cv2.CascadeClassifier("support_files/haarcascade_frontalface_default.xml")
+        for eachImg in os.listdir("temp"):
+            print(eachImg, 'read')
+            img = cv2.imread("temp/" + eachImg, 0)
+            faces = face_cascade.detectMultiScale(img) 
+            for(x,y,w,h) in faces:
+                sub_face = img[y:y+h, x:x+w]
+                face_file_name = "temp/presentFaces/face_" + str(i) + ".jpg"
+                cv2.imwrite(face_file_name,sub_face)
+                i=i+1
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        print (i, 'faces read')
+
+    def match(self):
+        subject = str(self.e.text())
+        # registration picts are in "registration_images/Year2" -> picts are labelled with roll no.
+        # extracted faces are in "temp/presentFaces"
+
+        present = [1, 13, 19, 33, 39, 70] #this list will have the rolls of students that are present.
+        
+        # getting all the rolls, names of year 2 students from database
+        xyear = (int(subject[2])+1)//2
+        
+        query='SELECT * FROM YEAR{};'.format(xyear)
+        c.execute(query)
+        rolls = []
+        names = []
+        for row in c.fetchall():
+            rolls.append(row[0])
+            names.append(row[1])
+
+        temp = []
+        for r in rolls:
+            if (r in present):
+                temp.append('P')
+            else:
+                temp.append('A')
+        
+        rolls = list(map(str, rolls))        
+        query='INSERT INTO {} (Date,{}) VALUES (20171018,{});'.format(subject, ','.join(rolls), ','.join(temp))
+        print (query)
+        c.execute(query)
+
+        
         
             
 if __name__ == '__main__':
