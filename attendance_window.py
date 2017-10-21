@@ -128,7 +128,55 @@ class AttendanceWindow(QtGui.QMainWindow):
         # registration picts are in "registration_images/Year2" -> picts are labelled with roll no.
         # extracted faces are in "temp/presentFaces"
 
-        present = [1, 13, 19, 33, 39, 70] #this list will have the rolls of students that are present.
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        detector= cv2.CascadeClassifier("support_files/haarcascade_frontalface_default.xml")
+
+        #create empth face list
+        faceSamples=[]
+        #create empty ID list
+        Ids=[]
+
+        def getImagesAndLabels(path, faceSamples, Ids):
+            #get the path of all the files in the folder
+            imagePaths=[os.path.join(path,f) for f in os.listdir(path)] 
+            #now looping through all the image paths and loading the Ids and the images
+            for imagePath in imagePaths:
+                #loading the image and converting it to gray scale
+                pilImage=Image.open(imagePath).convert('L')
+                #converting the PIL image into numpy array
+                imageNp=np.array(pilImage,'uint8')
+                #getting Id from image
+                Id=int(os.path.split(imagePath)[1].split(".")[0])
+                # extract face from image sample
+                faces=detector.detectMultiScale(imageNp)
+                #append that in the list as well as Id of it
+                for (x,y,w,h) in faces:
+                    faceSamples.append(imageNp[y:y+h,x:x+w])
+                    Ids.append(Id)
+                cv2.waitKey(100)
+            return faceSamples,Ids
+
+        def faceDetector(path):
+            recognizer.read("trainer/trainer.yml")
+            present = []
+            imagePaths=[os.path.join(path,f) for f in os.listdir(path)]
+            for imagePath in imagePaths:
+                img = cv2.imread(imagePath)
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                id, conf = recognizer.predict(gray)
+                present.append(id)
+            present = set(present)
+            return list(present)
+
+        shutil.rmtree("trainer",ignore_errors=True)
+        os.mkdir("trainer")
+        faces, Ids = getImagesAndLabels("registration_images/Year2", faceSamples, Ids)
+        recognizer.train(faces, np.array(Ids))
+        recognizer.write('trainer/trainer.yml')
+        present = faceDetector("temp/presentFaces")
+        print(present)
+
+        #present = [1, 13, 19, 33, 39, 70] #this list will have the rolls of students that are present.
         
         # getting all the rolls, names of year 2 students from database
         xyear = (int(subject[2])+1)//2
@@ -140,7 +188,7 @@ class AttendanceWindow(QtGui.QMainWindow):
         for row in c.fetchall():
             rolls.append(row[0])
             names.append(row[1])
-
+            
         temp = []
         for r in rolls:
             if (r in present):
