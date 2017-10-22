@@ -5,6 +5,7 @@ import time
 from PIL import Image
 import shutil
 import sqlite3
+import datetime
 
 from check_attendance import CheckAttendance
 from PyQt4 import QtGui,QtCore
@@ -68,16 +69,13 @@ class AttendanceWindow(QtGui.QMainWindow):
 
     def record_and_mark(self):
         self.record() #to record the video and save it to folder 'videos'
-        self.mark()
+        #self.get_snaps() #to get snaps from the recorded video
+        #self.extract_faces() #to read all faces from the snaps
+        self.match() #match extracted faces to those in database and update the database
 
     def record(self):
         #to save video with the name self.e.text()
         return
-    
-    def mark(self):
-        #self.get_snaps() #to get snaps from the recorded video
-        #self.extract_faces() #to read all faces from the snaps
-        self.match() #match extracted faces to those in database and update the database
 
     def get_snaps(self):
         shutil.rmtree("temp",ignore_errors=True)
@@ -125,8 +123,9 @@ class AttendanceWindow(QtGui.QMainWindow):
 
     def match(self):
         subject = str(self.e.text())
-        # registration picts are in "registration_images/Year2" -> picts are labelled with roll no.
-        # extracted faces are in "temp/presentFaces"
+
+        # getting all the rolls, names of year 2 students from database
+        xyear = (int(subject[2])+1)//2
 
         recognizer = cv2.face.LBPHFaceRecognizer_create()
         detector= cv2.CascadeClassifier("support_files/haarcascade_frontalface_default.xml")
@@ -170,16 +169,13 @@ class AttendanceWindow(QtGui.QMainWindow):
 
         shutil.rmtree("trainer",ignore_errors=True)
         os.mkdir("trainer")
-        faces, Ids = getImagesAndLabels("registration_images/Year2", faceSamples, Ids)
+        faces, Ids = getImagesAndLabels("registration_images/Year"+str(xyear), faceSamples, Ids)
         recognizer.train(faces, np.array(Ids))
         recognizer.write('trainer/trainer.yml')
         present = faceDetector("temp/presentFaces")
         print(present)
 
-        #present = [1, 13, 19, 33, 39, 70] #this list will have the rolls of students that are present.
         
-        # getting all the rolls, names of year 2 students from database
-        xyear = (int(subject[2])+1)//2
         
         query='SELECT * FROM YEAR{};'.format(xyear)
         c.execute(query)
@@ -196,10 +192,12 @@ class AttendanceWindow(QtGui.QMainWindow):
             else:
                 temp.append('A')
         
-        rolls = list(map(str, rolls))        
-        query='INSERT INTO {} (Date,{}) VALUES (20171018,{});'.format(subject, ','.join(rolls), ','.join(temp))
+        #rolls = list(map(str, rolls))
+        date = str(datetime.date.today().year)+str(datetime.date.today().month)+str(datetime.date.today().day)
+        query="INSERT INTO {} VALUES ({},'{}');".format(subject, date, "','".join(temp))
         print (query)
         c.execute(query)
+        print ("Query executed")
 
         
         
@@ -209,3 +207,7 @@ if __name__ == '__main__':
     gui = AttendanceWindow()
     gui.show()
     app.exec_()
+    c.close()
+    conn.commit()
+    print ("Data committed")
+    conn.close()
