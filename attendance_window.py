@@ -29,6 +29,13 @@ class AttendanceWindow(QtGui.QMainWindow):
         h.setFont(font)
         h.setText("ATTENDANCE")
 
+        #Label for displaying message
+        self.l2=QtGui.QLabel(self)
+        self.l2.setAlignment(QtCore.Qt.AlignCenter)
+        self.l2.setGeometry(QtCore.QRect(500,175,300,50))
+        self.l2.setStyleSheet("QLabel { color:red;}")
+        self.l2.setFont(QtGui.QFont("Arial",12))
+
         #Label and Subject code entry
         l=QtGui.QLabel(self)
         l.setAlignment(QtCore.Qt.AlignCenter)
@@ -42,7 +49,7 @@ class AttendanceWindow(QtGui.QMainWindow):
         self.e.setGeometry(275,175,250,50)
         self.e.setAlignment(QtCore.Qt.AlignCenter)
         self.e.setFont(QtGui.QFont("Times",18,QtGui.QFont.Bold))
-
+        
         #Recording Button
         b1=QtGui.QPushButton(self)
         b1.setText("RECORD AND MARK")
@@ -58,14 +65,18 @@ class AttendanceWindow(QtGui.QMainWindow):
         b2.setFont(font)
         b2.setGeometry(250,425,300,50)
         b2.clicked.connect(self.create_check_attendance)
-        
+
+                            
     def create_check_attendance(self):
         #To check Validity of Subject Code 
         sub=["IT301","IT302"] #TO DO - GET THESE FROM TABLE
         if self.e.text() in sub:
+            self.l2.setText("")
             self._check_attendance = CheckAttendance(self.e.text())
             self._check_attendance.show()
-
+        else:
+            self.l2.setText("INVALID SUBJECT CODE")
+            
     def record_and_mark(self):
         self.record() #to record the video and save it to folder 'videos'
         self.mark()
