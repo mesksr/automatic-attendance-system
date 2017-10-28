@@ -5,6 +5,7 @@ import time
 from PIL import Image
 import shutil
 import sqlite3
+import face_recognition
 
 from check_attendance import CheckAttendance
 from PyQt4 import QtGui,QtCore
@@ -124,7 +125,7 @@ class AttendanceWindow(QtGui.QMainWindow):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     print (i, 'faces read')
-    
+
     def match(self):
         subject = str(self.e.text())
         # registration picts are in "registration_images/Year2" -> picts are labelled with roll no.
