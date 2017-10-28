@@ -109,20 +109,22 @@ class AttendanceWindow(QtGui.QMainWindow):
         
     def extract_faces(self):
         i=0
-        face_cascade = cv2.CascadeClassifier("support_files/haarcascade_frontalface_default.xml")
-        for eachImg in os.listdir("temp"):
-            print(eachImg, 'read')
-            img = cv2.imread("temp/" + eachImg, 0)
-            faces = face_cascade.detectMultiScale(img) 
-            for(x,y,w,h) in faces:
-                sub_face = img[y:y+h, x:x+w]
-                face_file_name = "temp/presentFaces/face_" + str(i) + ".jpg"
-                cv2.imwrite(face_file_name,sub_face)
-                i=i+1
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        print (i, 'faces read')
-
+    for eachImg in os.listdir("temp"):
+        # print(eachImg, 'read')
+        try:
+            img = face_recognition.load_image_file("temp/" + eachImg)
+        except PermissionError:
+            continue
+        face_locations = face_recognition.face_locations(img)
+        for(top,right,bottom,left) in face_locations:
+            sub_face = img[top:bottom, left:right]
+            face_file_name = "temp1/presentFaces/face_" + str(i) + ".jpg"
+            cv2.imwrite(face_file_name,sub_face)
+            i=i+1
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    print (i, 'faces read')
+    
     def match(self):
         subject = str(self.e.text())
         # registration picts are in "registration_images/Year2" -> picts are labelled with roll no.
