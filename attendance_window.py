@@ -2,13 +2,41 @@ import cv2
 import numpy as np
 import os
 import time
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageStat
 import shutil
 import sqlite3
 import datetime
+import math
 
 from check_attendance import CheckAttendance
 from PyQt4 import QtGui,QtCore
+
+
+def improve_image(file_name):
+    img = Image.open(file_name)
+    stat = ImageStat.Stat(img)
+    orglvl = stat.mean[0]
+    
+    #1 Brightness
+    brght = ImageEnhance.Brightness(img)
+    if (orglvl<100):
+        x = 100/orglvl
+        brght_img = brght.enhance(x)
+    else:
+        brght_img = brght.enhance(1.0)
+                     
+
+    #2 Sharpness
+    contrast = ImageEnhance.Sharpness(brght_img)
+    shrp_img = contrast.enhance(1.0)    
+
+    #3 Color
+    color = ImageEnhance.Color(shrp_img)
+    clr_img = color.enhance(0.0)
+
+    #4 Resize
+    rsz_img = clr_img.resize((200, 200), Image.ANTIALIAS)
+    return rsz_img
 
 conn=sqlite3.connect('Attendance System.db')
 c=conn.cursor()
@@ -70,7 +98,7 @@ class AttendanceWindow(QtGui.QMainWindow):
     def record_and_mark(self):
         self.record() #to record the video and save it to folder 'videos'
         #self.get_snaps() #to get snaps from the recorded video
-        #self.extract_faces() #to read all faces from the snaps
+        self.extract_faces() #to read all faces from the snaps
         self.match() #match extracted faces to those in database and update the database
 
     def record(self):
@@ -81,6 +109,8 @@ class AttendanceWindow(QtGui.QMainWindow):
         shutil.rmtree("temp",ignore_errors=True)
         os.mkdir("temp")
         os.mkdir("temp/presentFaces")
+        os.mkdir("temp/frames")
+        os.mkdir("temp/rawPresentFaces")
         video_name = str(self.e.text())
         crop_time = 2
         time_gap = 2
@@ -97,7 +127,7 @@ class AttendanceWindow(QtGui.QMainWindow):
                 break   
             cv2.waitKey(3)
             if( (count == (crop_time*fps + i*time_gap*fps)) &(count < length)):
-                cv2.imwrite('temp/frame'+str(i)+'.jpg',frame)
+                cv2.imwrite('temp/frames/frame'+str(i)+'.jpg',frame)
                 i = i+1
                 print('snap taken @', count)
             count = count + 1
@@ -108,14 +138,16 @@ class AttendanceWindow(QtGui.QMainWindow):
     def extract_faces(self):
         i=0
         face_cascade = cv2.CascadeClassifier("support_files/haarcascade_frontalface_default.xml")
-        for eachImg in os.listdir("temp"):
+        for eachImg in os.listdir("temp/frames"):
             print(eachImg, 'read')
-            img = cv2.imread("temp/" + eachImg, 0)
+            img = cv2.imread("temp/frames/" + eachImg, 0)
             faces = face_cascade.detectMultiScale(img) 
             for(x,y,w,h) in faces:
                 sub_face = img[y:y+h, x:x+w]
-                face_file_name = "temp/presentFaces/face_" + str(i) + ".jpg"
-                cv2.imwrite(face_file_name,sub_face)
+                face_file_name = "temp/rawPresentFaces/face_" + str(i) + ".jpg"
+                cv2.imwrite(face_file_name, sub_face)
+                new_image = improve_image(face_file_name)
+                new_image.save("temp/presentFaces/face_" + str(i) + ".jpg")
                 i=i+1
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -192,7 +224,6 @@ class AttendanceWindow(QtGui.QMainWindow):
             else:
                 temp.append('A')
         
-        #rolls = list(map(str, rolls))
         date = str(datetime.date.today().year)+str(datetime.date.today().month)+str(datetime.date.today().day)
         query="INSERT INTO {} VALUES ({},'{}');".format(subject, date, "','".join(temp))
         print (query)
