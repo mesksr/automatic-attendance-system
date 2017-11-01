@@ -2,12 +2,41 @@ import cv2
 import numpy as np
 import os
 import time
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageStat
 import shutil
 import sqlite3
+import datetime
+import math
 
 from check_attendance import CheckAttendance
 from PyQt4 import QtGui,QtCore
+
+
+def improve_image(file_name):
+    img = Image.open(file_name)
+    stat = ImageStat.Stat(img)
+    orglvl = stat.mean[0]
+    
+    #1 Brightness
+    brght = ImageEnhance.Brightness(img)
+    if (orglvl<100):
+        x = 100/orglvl
+        brght_img = brght.enhance(x)
+    else:
+        brght_img = brght.enhance(1.0)
+                     
+
+    #2 Sharpness
+    contrast = ImageEnhance.Sharpness(brght_img)
+    shrp_img = contrast.enhance(1.0)    
+
+    #3 Color
+    color = ImageEnhance.Color(shrp_img)
+    clr_img = color.enhance(0.0)
+
+    #4 Resize
+    rsz_img = clr_img.resize((200, 200), Image.ANTIALIAS)
+    return rsz_img
 
 conn=sqlite3.connect('Attendance System.db')
 c=conn.cursor()
@@ -33,9 +62,9 @@ class AttendanceWindow(QtGui.QMainWindow):
         self.l2=QtGui.QLabel(self)
         self.l2.setAlignment(QtCore.Qt.AlignCenter)
         self.l2.setGeometry(QtCore.QRect(500,175,300,50))
-        self.l2.setStyleSheet("QLabel { color:red;}")
-        self.l2.setFont(QtGui.QFont("Arial",12))
-
+        self.l2.setStyleSheet("QLabel { color:green;}")
+        self.l2.setFont(QtGui.QFont("Times",12))
+        
         #Label and Subject code entry
         l=QtGui.QLabel(self)
         l.setAlignment(QtCore.Qt.AlignCenter)
@@ -49,7 +78,7 @@ class AttendanceWindow(QtGui.QMainWindow):
         self.e.setGeometry(275,175,250,50)
         self.e.setAlignment(QtCore.Qt.AlignCenter)
         self.e.setFont(QtGui.QFont("Times",18,QtGui.QFont.Bold))
-        
+
         #Recording Button
         b1=QtGui.QPushButton(self)
         b1.setText("RECORD AND MARK")
@@ -66,7 +95,17 @@ class AttendanceWindow(QtGui.QMainWindow):
         b2.setGeometry(250,425,300,50)
         b2.clicked.connect(self.create_check_attendance)
 
-                            
+        #Button to go back to main window
+        b3=QtGui.QPushButton(self)
+        b3.setText("<< BACK")
+        b3.setFont(QtGui.QFont("Times",12,QtGui.QFont.Bold))
+        b3.setGeometry(50,520,80,20)
+        b3.setStyleSheet("QPushButton { background-color : blue;color : white;}")
+        b3.clicked.connect(self.back)
+        
+    def back(self):
+        self.close()
+        
     def create_check_attendance(self):
         #To check Validity of Subject Code 
         sub=["IT301","IT302"] #TO DO - GET THESE FROM TABLE
@@ -75,25 +114,24 @@ class AttendanceWindow(QtGui.QMainWindow):
             self._check_attendance = CheckAttendance(self.e.text())
             self._check_attendance.show()
         else:
-            self.l2.setText("INVALID SUBJECT CODE")
-            
+            self.l2.setText("Invalid Subject Code")
+
     def record_and_mark(self):
         self.record() #to record the video and save it to folder 'videos'
-        self.mark()
+        #self.get_snaps() #to get snaps from the recorded video
+        self.extract_faces() #to read all faces from the snaps
+        self.match() #match extracted faces to those in database and update the database
 
     def record(self):
         #to save video with the name self.e.text()
         return
-    
-    def mark(self):
-        #self.get_snaps() #to get snaps from the recorded video
-        #self.extract_faces() #to read all faces from the snaps
-        self.match() #match extracted faces to those in database and update the database
 
     def get_snaps(self):
         shutil.rmtree("temp",ignore_errors=True)
         os.mkdir("temp")
         os.mkdir("temp/presentFaces")
+        os.mkdir("temp/frames")
+        os.mkdir("temp/rawPresentFaces")
         video_name = str(self.e.text())
         crop_time = 2
         time_gap = 2
@@ -110,7 +148,7 @@ class AttendanceWindow(QtGui.QMainWindow):
                 break   
             cv2.waitKey(3)
             if( (count == (crop_time*fps + i*time_gap*fps)) &(count < length)):
-                cv2.imwrite('temp/frame'+str(i)+'.jpg',frame)
+                cv2.imwrite('temp/frames/frame'+str(i)+'.jpg',frame)
                 i = i+1
                 print('snap taken @', count)
             count = count + 1
@@ -121,14 +159,16 @@ class AttendanceWindow(QtGui.QMainWindow):
     def extract_faces(self):
         i=0
         face_cascade = cv2.CascadeClassifier("support_files/haarcascade_frontalface_default.xml")
-        for eachImg in os.listdir("temp"):
+        for eachImg in os.listdir("temp/frames"):
             print(eachImg, 'read')
-            img = cv2.imread("temp/" + eachImg, 0)
+            img = cv2.imread("temp/frames/" + eachImg, 0)
             faces = face_cascade.detectMultiScale(img) 
             for(x,y,w,h) in faces:
                 sub_face = img[y:y+h, x:x+w]
-                face_file_name = "temp/presentFaces/face_" + str(i) + ".jpg"
-                cv2.imwrite(face_file_name,sub_face)
+                face_file_name = "temp/rawPresentFaces/face_" + str(i) + ".jpg"
+                cv2.imwrite(face_file_name, sub_face)
+                new_image = improve_image(face_file_name)
+                new_image.save("temp/presentFaces/face_" + str(i) + ".jpg")
                 i=i+1
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -136,13 +176,59 @@ class AttendanceWindow(QtGui.QMainWindow):
 
     def match(self):
         subject = str(self.e.text())
-        # registration picts are in "registration_images/Year2" -> picts are labelled with roll no.
-        # extracted faces are in "temp/presentFaces"
 
-        present = [1, 13, 19, 33, 39, 70] #this list will have the rolls of students that are present.
-        
         # getting all the rolls, names of year 2 students from database
         xyear = (int(subject[2])+1)//2
+
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        detector= cv2.CascadeClassifier("support_files/haarcascade_frontalface_default.xml")
+
+        #create empth face list
+        faceSamples=[]
+        #create empty ID list
+        Ids=[]
+
+        def getImagesAndLabels(path, faceSamples, Ids):
+            #get the path of all the files in the folder
+            imagePaths=[os.path.join(path,f) for f in os.listdir(path)] 
+            #now looping through all the image paths and loading the Ids and the images
+            for imagePath in imagePaths:
+                #loading the image and converting it to gray scale
+                pilImage=Image.open(imagePath).convert('L')
+                #converting the PIL image into numpy array
+                imageNp=np.array(pilImage,'uint8')
+                #getting Id from image
+                Id=int(os.path.split(imagePath)[1].split(".")[0])
+                # extract face from image sample
+                faces=detector.detectMultiScale(imageNp)
+                #append that in the list as well as Id of it
+                for (x,y,w,h) in faces:
+                    faceSamples.append(imageNp[y:y+h,x:x+w])
+                    Ids.append(Id)
+                cv2.waitKey(100)
+            return faceSamples,Ids
+
+        def faceDetector(path):
+            recognizer.read("trainer/trainer.yml")
+            present = []
+            imagePaths=[os.path.join(path,f) for f in os.listdir(path)]
+            for imagePath in imagePaths:
+                img = cv2.imread(imagePath)
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                id, conf = recognizer.predict(gray)
+                present.append(id)
+            present = set(present)
+            return list(present)
+
+        shutil.rmtree("trainer",ignore_errors=True)
+        os.mkdir("trainer")
+        faces, Ids = getImagesAndLabels("registration_images/Year"+str(xyear), faceSamples, Ids)
+        recognizer.train(faces, np.array(Ids))
+        recognizer.write('trainer/trainer.yml')
+        present = faceDetector("temp/presentFaces")
+        print(present)
+
+        
         
         query='SELECT * FROM YEAR{};'.format(xyear)
         c.execute(query)
@@ -151,7 +237,7 @@ class AttendanceWindow(QtGui.QMainWindow):
         for row in c.fetchall():
             rolls.append(row[0])
             names.append(row[1])
-
+            
         temp = []
         for r in rolls:
             if (r in present):
@@ -159,10 +245,11 @@ class AttendanceWindow(QtGui.QMainWindow):
             else:
                 temp.append('A')
         
-        rolls = list(map(str, rolls))        
-        query='INSERT INTO {} (Date,{}) VALUES (20171018,{});'.format(subject, ','.join(rolls), ','.join(temp))
+        date = str(datetime.date.today().year)+str(datetime.date.today().month)+str(datetime.date.today().day)
+        query="INSERT INTO {} VALUES ({},'{}');".format(subject, date, "','".join(temp))
         print (query)
         c.execute(query)
+        print ("Query executed")
 
         
         
@@ -172,3 +259,8 @@ if __name__ == '__main__':
     gui = AttendanceWindow()
     gui.show()
     app.exec_()
+    c.close()
+    conn.commit()
+    print ("Data committed")
+    conn.close()
+
