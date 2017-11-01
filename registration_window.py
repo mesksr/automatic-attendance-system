@@ -2,7 +2,6 @@ import cv2
 import sqlite3
 from PyQt4 import QtGui,QtCore
 
-
 class RegistrationWindow(QtGui.QMainWindow):
     #Registration window for student registration
       
@@ -99,6 +98,17 @@ class RegistrationWindow(QtGui.QMainWindow):
         b1.setGeometry(520,450,100,30)
         b1.setStyleSheet("QPushButton { background-color : green;color : white ; }")
         b1.clicked.connect(self.store_in_database)
+
+        #Button to go back to main window
+        b3=QtGui.QPushButton(self)
+        b3.setText("<< BACK")
+        b3.setFont(QtGui.QFont("Times",12,QtGui.QFont.Bold))
+        b3.setGeometry(50,520,80,20)
+        b3.setStyleSheet("QPushButton { background-color : blue;color : white;}")
+        b3.clicked.connect(self.back)
+
+    def back(self):
+        self.close()
             
     def erase(self):
         #function for clearing fields and changing to default
@@ -174,8 +184,11 @@ class RegistrationWindow(QtGui.QMainWindow):
         if (len(name) == 0):
             return 1
         
-        for i in range(10):
-            if (str(i) in name):
+        if name.count(' ')==len(name):
+            return 1
+        
+        for c in name:
+            if (not c.isalpha() and c!=' '):
                 return 1
         
         try:
