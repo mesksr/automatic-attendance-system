@@ -7,7 +7,7 @@ conn=sqlite3.connect('Attendance System.db')
 c=conn.cursor()
  
 class CheckAttendance(QtGui.QMainWindow):
-    def __init__(self,sub):
+    def __init__(self,sub="IT301"):
         self.subject=sub
         
         super(CheckAttendance, self).__init__()
@@ -90,6 +90,17 @@ class CheckAttendance(QtGui.QMainWindow):
                 else:
                     a += 1
             self.text.insertPlainText(str(rolls[i])+'\t'+str(names[i])+'\t'+str((100*p)/(p+a))+'\n')
+
+        #Button to go back to Attendance Window
+        b1=QtGui.QPushButton(self)
+        b1.setText("<< BACK")
+        b1.setFont(QtGui.QFont("Times",12,QtGui.QFont.Bold))
+        b1.setGeometry(40,540,80,20)
+        b1.setStyleSheet("QPushButton { background-color : blue;color : white;}")
+        b1.clicked.connect(self.back)
+      
+    def back(self):
+        self.close()
         
     def show_database(self):
         #To display attendance on specific date 

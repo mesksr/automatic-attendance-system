@@ -100,6 +100,17 @@ class RegistrationWindow(QtGui.QMainWindow):
         b1.setStyleSheet("QPushButton { background-color : green;color : white ; }")
         b1.clicked.connect(self.store_in_database)
             
+        #Button to go back to Attendance Window
+        b1=QtGui.QPushButton(self)
+        b1.setText("<< BACK")
+        b1.setFont(QtGui.QFont("Times",12,QtGui.QFont.Bold))
+        b1.setGeometry(40,540,80,20)
+        b1.setStyleSheet("QPushButton { background-color : blue;color : white;}")
+        b1.clicked.connect(self.back)
+      
+    def back(self):
+        self.close()
+        
     def erase(self):
         #function for clearing fields and changing to default
         for entry in self.entries:

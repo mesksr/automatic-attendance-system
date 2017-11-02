@@ -88,16 +88,27 @@ class AttendanceWindow(QtGui.QMainWindow):
         b2.setGeometry(250,425,300,50)
         b2.clicked.connect(self.create_check_attendance)
         
+        #Button to go back to Attendance Window
+        b1=QtGui.QPushButton(self)
+        b1.setText("<< BACK")
+        b1.setFont(QtGui.QFont("Times",12,QtGui.QFont.Bold))
+        b1.setGeometry(40,540,80,20)
+        b1.setStyleSheet("QPushButton { background-color : blue;color : white;}")
+        b1.clicked.connect(self.back)
+      
+    def back(self):
+        self.close()
+        
     def create_check_attendance(self):
         #To check Validity of Subject Code 
-        sub=["IT301","IT302"] #TO DO - GET THESE FROM TABLE
+        sub=["IT401","IT201"] #TO DO - GET THESE FROM TABLE
         if self.e.text() in sub:
             self._check_attendance = CheckAttendance(self.e.text())
             self._check_attendance.show()
 
     def record_and_mark(self):
         self.record() #to record the video and save it to folder 'videos'
-        #self.get_snaps() #to get snaps from the recorded video
+        self.get_snaps() #to get snaps from the recorded video
         self.extract_faces() #to read all faces from the snaps
         self.match() #match extracted faces to those in database and update the database
 
@@ -106,11 +117,14 @@ class AttendanceWindow(QtGui.QMainWindow):
         return
 
     def get_snaps(self):
+        print ("cleaning past data")
         shutil.rmtree("temp",ignore_errors=True)
+        print ("creating directories")
         os.mkdir("temp")
         os.mkdir("temp/presentFaces")
         os.mkdir("temp/frames")
         os.mkdir("temp/rawPresentFaces")
+        print ("starting taking snaps")
         video_name = str(self.e.text())
         crop_time = 2
         time_gap = 2
@@ -154,6 +168,7 @@ class AttendanceWindow(QtGui.QMainWindow):
         print (i, 'faces read')
 
     def match(self):
+        print ("matching starts")
         subject = str(self.e.text())
 
         # getting all the rolls, names of year 2 students from database
