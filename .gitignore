@@ -47,3 +47,5 @@ Temporary Items
 .apdisk
 
 __pycache__
+temp
+.vscode
