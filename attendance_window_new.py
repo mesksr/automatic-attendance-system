@@ -97,8 +97,8 @@ class AttendanceWindow(QtGui.QMainWindow):
 
     def record_and_mark(self):
         self.record() #to record the video and save it to folder 'videos'
-        #self.get_snaps() #to get snaps from the recorded video
-        #self.extract_faces() #to read all faces from the snaps
+        self.get_snaps() #to get snaps from the recorded video
+        self.extract_faces() #to read all faces from the snaps
         self.match() #match extracted faces to those in database and update the database
 
     def record(self):
@@ -168,7 +168,8 @@ class AttendanceWindow(QtGui.QMainWindow):
         for imagePath in imagePaths:
             img = face_recognition.load_image_file(imagePath)
             known_faces_names.append(imagePath.split(".")[0].split("\\")[1])
-            known_faces.append(face_recognition.face_encodings(img)[0])
+            if len(face_recognition.face_encodings(img)) != 0:
+                known_faces.append(face_recognition.face_encodings(img)[0])
         # print(known_faces_names)
         path = "temp/presentFaces"
         imagePaths=[os.path.join(path,f) for f in os.listdir(path)]
@@ -206,7 +207,7 @@ class AttendanceWindow(QtGui.QMainWindow):
                 temp.append('A')
         
         rolls = list(map(str, rolls))        
-        query='INSERT INTO {} (Date,{}) VALUES (20171018,{});'.format(subject, ','.join(rolls), ','.join(temp))
+        query='INSERT INTO VALUES (20171018,{});'.format(subject, ','.join(rolls), ','.join(temp))
         print (query)
         c.execute(query)
 
