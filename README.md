@@ -43,7 +43,12 @@ What things you need to install the software and how to install them
  * [cv2](https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_gui/py_image_display/py_image_display.html) - Face Recognisation
  
 ## Contributing
-We will update the details soon.
+Project Head - [Subham Kumar Singh Rajput](https://github.com/mesksr)
+Project subordinates:
+[Dilpreet Singh Chawla](https://github.com/iamdsc)
+[Pranit De](https://github.com/Pranit18De)
+[Omkar Ajnadkar](https://github.com/Omkar-Ajnadkar)
+Pratik Gupta
  
 ## Versioning
 We use [GitHub](http://github.com/) for versioning. 
